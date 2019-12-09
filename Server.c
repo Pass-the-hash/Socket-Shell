@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
             printf("Client diconnected\n");
           } else
           {
-            close(sockfd);
+            //close(sockfd);
          do {
 
           bzero(buffer, 256);

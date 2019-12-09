@@ -13,10 +13,15 @@
 
 #define BUFFER_SIZE 100000
 
+int sockfd;
+char *keyword="END";
+
 void handler(int signum)
 {
   //close(sockfd);
   //printf("\nCaught signal %d\nGoodbye! :)\n", signum);
+  send(sockfd, "END", strlen("END"), 0);
+  close(sockfd);
   exit(0);
 }
 
@@ -28,11 +33,11 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, portno, n;
+    int portno, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
     signal(SIGINT, handler);
-    char buffer[BUFFER_SIZE], *keyword="END";
+    char out[BUFFER_SIZE], buffer[256];
     if (argc < 3)
     {
         fprintf(stderr, "usage %s hostname port\n", argv[0]);
@@ -85,11 +90,11 @@ int main(int argc, char *argv[])
             exit(1);
         }
       }
-      if ((n=recv(sockfd, buffer, BUFFER_SIZE, 0)) > 0)
+      if ((n=recv(sockfd, out, 256, 0)) > 0)
       {
-          buffer[n] = '\0';
+          out[n] = '\0';
           for (int i=0; i<=n; i++){
-            putchar(buffer[i]);
+            putchar(out[i]);
           }
           putchar('\n');
       } else
