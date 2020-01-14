@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/sendfile.h>
 #include <fcntl.h>
 
 typedef struct sockaddr server;
@@ -26,24 +27,14 @@ void error(const char *msg)
     exit(1);
 }
 
-int game(int number)
-{
-  srand(time(NULL));
-  printf("Guessing numbers\n");
-  if ((rand()%20+1)==number)
-  {
-    return 1;
-  }
-  return 0;
-}
 
 int main(int argc, char *argv[])
 {
     int sockfd, newsockfd, port, pid, status, childpid;
     socklen_t clilen;
-    char buffer[256], keyword[4]="END", *execute[4];
+    char buffer[256], keyword[4]="Exit", *execute[4], *output, *history_path;
     struct sockaddr_in serv_addr, cli_addr;
-    int n, out, err;
+    int n, err, i;
     char str[INET_ADDRSTRLEN];
     signal(SIGINT, handler);
     if (argc < 2)
@@ -65,7 +56,11 @@ int main(int argc, char *argv[])
         error("ERROR on binding");
 
       int end=0;
+
       while(1){
+        history_path=strcat(getenv("HOME"), "history");
+        if ( access( history_path, F_OK ) != -1 ) remove("~/.history");
+
         int code;
         if (listen(sockfd, 5) == -1) {
             error("listen");
@@ -97,42 +92,51 @@ int main(int argc, char *argv[])
             printf("Client diconnected\n");
           } else
           {
+            i=0;
             //close(sockfd);
          do {
-
+           int fd = open("out", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+          // FILE* history=fopen(history_path, "a");
+           struct stat file;
+           //int size;
+          if (i!=0){
+             if (stat("out", &file)!=0){
+               continue;
+             }
+             output=malloc(8);
+             sprintf(output, "%d", file.st_size);
+             if (send(newsockfd, output, 8, 0) == -1)
+             {
+              perror("send");
+              exit(1);
+             }
+             output=realloc(output, file.st_size);
+             read(fd, output, file.st_size);
+             //printf("%s\n", output);
+             send(newsockfd, output, file.st_size, 0);
+          }
           bzero(buffer, 256);
 
-          if (read(newsockfd, buffer, 255) < 0)
+          if (n=recv(newsockfd, buffer, 255, 0) < 0)
           {
             error("ERROR reading from socket");
             end=1;
           } else
           {
+            i++;
+            buffer[strlen(buffer)-1]=0;
             if (!strncmp(buffer, keyword, 3))
             {
               end=1;
-              int i=0;
-              while(1)
-              {
-                if (read(newsockfd, buffer, 255) < 0)
-                {
-                  error("ERROR reading from socket");
-                }
-                if (!strncmp(buffer, keyword, 3))
-                {
-                  bzero(buffer, 256);
-                  if (i!=0) sprintf(buffer, "%s", "echo 'Server won.'");
-                  break;
-                }
-                if(game(atoi(buffer)))
-                {
-                  sprintf(buffer, "%s", "echo 'You won!'");
-                  break;
-                }
-                i++;
-              }
             }
-
+            if (buffer[0]=='c' && buffer[1]=='d' && buffer[2]==' ')
+            {
+              /*char *path = strtok(buffer, " ");
+              path=strtok(NULL, " ");*/
+              chdir(buffer);
+              sprintf(buffer, "%s", "pwd");
+            }
+            //ftruncate(fd, 0);
             childpid=fork();
             if (childpid==-1)
             {
@@ -140,26 +144,54 @@ int main(int argc, char *argv[])
               exit(1);
             } else if (childpid!=0)
             {
+              //printf("Read number: %d", n);
               while(wait(&status)!=childpid);
               printf("Command executed\n");
-              //exit(0);
+              continue;
             }
             else{
-              //out=dup(STDOUT_FILENO);
-              dup2( newsockfd, STDOUT_FILENO );
-              dup2( newsockfd, STDERR_FILENO );
-              /*close(newsockfd);*/
+
+              if ( access( "out", F_OK ) != -1 ) remove("out");
+
+              fd = open("out", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+              dup2(fd, 1);
+              dup2(fd, 2);
+
+              /*if (!strncmp(buffer, "history", sizeof("history")))
+              {
+                sprintf(buffer, "%s%s", "cat ", history_path);
+              }*/
               execute[0] = "/bin/bash";
               execute[1] = "-c";
               execute[2] = buffer;
               execute[3] = NULL;
+              //fprintf(history, "%s", buffer);
               code=execvp(execute[0], execute);
-              //exit(code);
             }
 
           }
 
         } while(!end);
+        /*int i=0;
+        while(1)
+        {
+          if (read(newsockfd, buffer, 255) < 0)
+          {
+            error("ERROR reading from socket");
+          }
+          if (!strncmp(buffer, keyword, 3))
+          {
+            bzero(buffer, 256);
+            if (i!=0) sprintf(buffer, "%s", "echo 'Server won.'");
+            break;
+          }
+          if(game(atoi(buffer)))
+          {
+            sprintf(buffer, "%s", "echo 'You won!'");
+            break;
+          }
+          i++;
+        }*/
         exit(code);
       }
     }

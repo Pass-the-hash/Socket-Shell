@@ -10,8 +10,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fcntl.h>
+//#include <limits.h>
 
-#define BUFFER_SIZE 100000
+//#define BUFFER_SIZE 2147483647
 
 int sockfd;
 char *keyword="END";
@@ -33,11 +34,11 @@ void error(const char *msg)
 
 int main(int argc, char *argv[])
 {
-    int portno, n;
+    int portno, n, size;
     struct sockaddr_in serv_addr;
     struct hostent *server;
     signal(SIGINT, handler);
-    char out[BUFFER_SIZE], buffer[256];
+    char *out=malloc(8), buffer[256];
     if (argc < 3)
     {
         fprintf(stderr, "usage %s hostname port\n", argv[0]);
@@ -65,7 +66,12 @@ int main(int argc, char *argv[])
     srand(time(NULL));
     int end=1;
     int count=0;
+    int received;
+
     while(printf("%s_> ", argv[1]), fgets(buffer, 256, stdin), !feof(stdin)){
+      //bzero(out, BUFFER_SIZE);
+      //if (buffer[0]=='\n') continue;
+      if (buffer[0]=='\n') continue;
       if (send(sockfd, buffer, strlen(buffer), 0) == -1)
       {
           perror("send");
@@ -90,18 +96,31 @@ int main(int argc, char *argv[])
             exit(1);
         }
       }
-      if ((n=recv(sockfd, out, 256, 0)) > 0)
+      if(n=recv(sockfd, out, 8, 0)>0)
       {
-          out[n] = '\0';
-          for (int i=0; i<=n; i++){
+        int size=atoi(out);
+        out=realloc(out, size);
+        //printf("Size of buffer: %d\tSize of output:%d\n", sizeof(out), size);
+        //FILE* fp = fopen("client", "rw");
+        recv(sockfd, out, size, 0);
+        /*while( (received = )> 0 ) {
+          //tot+=b;
+          //fwrite(out, 1, received, fp);
+        }*/
+        printf("%s", out);
+
+          /*for (int i=0; i<received; i++){
             putchar(out[i]);
-          }
-          putchar('\n');
+          }*/
+        //out[BUFFER_SIZE-1] = '\0';
+
+        putchar('\n');
+        //free(out);
       } else
       {
-          if (n < 0) perror("recv");
-          else printf("Server closed connection\n");
-          exit(1);
+        if (n < 0) perror("recv");
+        else printf("Server closed connection\n");
+        exit(1);
       }
 
       if (end==0) break;
