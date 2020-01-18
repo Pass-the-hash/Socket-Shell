@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
           {
             i++;
             buffer[strlen(buffer)-1]=0;
-            if (!strncmp(buffer, keyword, sizeof(keyword)) //Αν η εντολή είναι η "Exit", τερματίζεται η επικοινωνία
+            if (!strncmp(buffer, keyword, sizeof(keyword))) //Αν η εντολή είναι η "Exit", τερματίζεται η επικοινωνία
             {
               end=1;
             }
