@@ -15,13 +15,13 @@
 //#define BUFFER_SIZE 2147483647
 
 int sockfd;
-char *keyword="END";
+char *keyword="Exit";
 
-void handler(int signum)
+void handler(int signum)   
 {
   //close(sockfd);
   //printf("\nCaught signal %d\nGoodbye! :)\n", signum);
-  send(sockfd, "END", strlen("END"), 0);
+  send(sockfd, "Exit", strlen("END"), 0);
   close(sockfd);
   exit(0);
 }
@@ -47,7 +47,19 @@ int main(int argc, char *argv[])
     portno = atoi(argv[2]);
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
+        error("ERROR opening socsignal(SIGINT, handler);
+    char *out=malloc(8), buffer[256];
+    if (argc < 3)
+    {
+        fprintf(stderr, "usage %s hostname port\n", argv[0]);
+        exit(0);
+    }
+    portno = atoi(argv[2]);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
         error("ERROR opening socket");
+    server = gethostbyname(argv[1]);
+    if (server == NULLket");
     server = gethostbyname(argv[1]);
     if (server == NULL)
     {
@@ -68,19 +80,19 @@ int main(int argc, char *argv[])
     int count=0;
     int received;
 
-    while(printf("%s_> ", argv[1]), fgets(buffer, 256, stdin), !feof(stdin)){
+    while(printf("%s_> ", argv[1]), fgets(buffer, 256, stdin), !feof(stdin)){   //Προτροπή για είσοδο εντολών από το χρήστη
       //bzero(out, BUFFER_SIZE);
       //if (buffer[0]=='\n') continue;
-      if (buffer[0]=='\n') continue;
-      if (send(sockfd, buffer, strlen(buffer), 0) == -1)
+      if (buffer[0]=='\n') continue;    //Αν δοθεί κενό, τότε επανέρχεται στην προτροπή χρήστη
+      if (send(sockfd, buffer, strlen(buffer), 0) == -1) //Η εντολή στέλνεται στο διακομιστή μέσω υποδοχής
       {
           perror("send");
           exit(1);
       }
-      if (strncmp(buffer, keyword, 3)==0)
+      if (strncmp(buffer, keyword, 4)==0) //Αν δοθεί η "Exit", τερματίζεται το πρόγραμμα
       {
         end=0;
-        for (int i=0; i<count; i++)
+        /*for (int i=0; i<count; i++)
         {
           sprintf(buffer, "%d", rand()%20+1);
           if (send(sockfd, buffer, strlen(buffer), 0) == -1)
@@ -89,20 +101,20 @@ int main(int argc, char *argv[])
               exit(1);
           }
         }
-        sprintf(buffer, "%s", "END");
-        if (send(sockfd, buffer, strlen(buffer), 0) == -1)
+        //sprintf(buffer, "%s", "Εxit");  
+        if (send(sockfd, buffer, strlen(buffer), 0) == -1) 
         {
             perror("send");
             exit(1);
-        }
-      }
-      if(n=recv(sockfd, out, 8, 0)>0)
+        }*/
+      } 
+      if(n=recv(sockfd, out, 8, 0)>0) //Λήψη του μεγέθους εξόδου της εντολής από το διακομιστή
       {
-        int size=atoi(out);
+        int size=atoi(out); //Μετατροπή σε ακέραιο
         out=realloc(out, size);
         //printf("Size of buffer: %d\tSize of output:%d\n", sizeof(out), size);
         //FILE* fp = fopen("client", "rw");
-        recv(sockfd, out, size, 0);
+        recv(sockfd, out, size, 0); //Λήψη της εξόδου της εντολής 
         /*while( (received = )> 0 ) {
           //tot+=b;
           //fwrite(out, 1, received, fp);
